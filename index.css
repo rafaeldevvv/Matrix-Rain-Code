@@ -1,0 +1,36 @@
+* {
+   padding: 0;
+   margin: 0;
+   box-sizing: border-box;
+}
+
+html,
+body {
+   overflow: hidden;
+}
+
+body {
+   background-color: black;
+   max-height: 100vh;
+   min-height: 100vh;
+}
+
+.wrapper {
+   display: flex;
+   width: max-content;
+   user-select: none;
+}
+
+.column {
+   display: flex;
+   width: min-content;
+   height: max-content;
+   flex-direction: column;
+}
+
+.letter {
+   text-shadow: 0 0 10px;
+   color: #0f0;
+   font-weight: 800;
+   margin-block: -2px;
+}
