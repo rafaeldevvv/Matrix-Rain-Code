@@ -4,8 +4,8 @@ const lettersString = "ツテぱびぷのねぬとなゟゑをゐわれるむぬ
 const letters = Array.from(lettersString);
 
 // this is to delay the columns so that they will not go down all at once
-const delayVariation = 40;
-const maxWordLength = 30;
+const delayVariation = 50;
+const maxWordLength = 50;
 const lettersPerSecond = 25;
 
 // helper function
@@ -39,15 +39,15 @@ function renderColumns() {
 
   for (; wrapper.clientWidth < innerWidth; ) {
     const column = elt("div", { className: "column" });
-    column.style.fontSize = randomNumber(13, 20) + "px";
+    column.style.fontSize = randomNumber(13, 23) + "px";
     wrapper.appendChild(column);
 
     const lettersDOM = [];
     for (; column.clientHeight < innerHeight; ) {
       const letter = elt("span", { className: "letter" }, randomItem(letters));
       letter.style.opacity = "0";
+      
       lettersDOM.push(letter);
-
       column.appendChild(letter);
     }
 
@@ -57,7 +57,6 @@ function renderColumns() {
   return columns;
 }
 
-// these
 function generateColors(height) {
   const colors = [];
 
@@ -90,49 +89,63 @@ function generateOpacities(height) {
     opacity += opacityIncrement;
   }
 
-  return opacities;
+  return opacities; 
+}
+
+// convenient wrapper function to run animations
+function runAnimation(frameFunc) {
+  let lastTime = null;
+  function frame(time) {
+    if (lastTime != null) {
+      let timeStep = Math.min(time - lastTime, 100) / 1000;
+      frameFunc(timeStep);
+    }
+    lastTime = time;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 }
 
 async function animateColumn(column) {
+  // instead of creating the colors and opacities inside styleLetters, they are generated here so that they don't need to
+  // be recreated every time we update the column
   let height = randomNumber(0, maxWordLength);
   let colors = generateColors(height);
   let opacities = generateOpacities(height);
 
-  // this is the index of the first letter from top to bottom
+  // this is an approximate index of the first letter from top to bottom
   let currentIndex = -height - randomNumber(0, delayVariation);
 
   function updateColumn() {
-    // instead of creating the colors and opacities inside styleLetters, they are generated here so that they don't need to
-    // be recreated every time we update the column
+    // we need to clean all letters before styling the active ones because
+    // requestAnimationFrame might skip some letters depending on the time step
+    hideAllLetters(column);
     styleLetters(
-      column.filter((_, i) => i >= currentIndex && i < currentIndex + height),
+      column.filter((_, i) => i > currentIndex && i < currentIndex + height),
       colors,
       opacities,
       currentIndex
     );
   }
 
-  let previousTime = null;
-  const manageAnimation = (time) => {
-    const newTime = Math.floor(time / 1000 * lettersPerSecond);
-    if (previousTime !== newTime) {
-      currentIndex++;
+  runAnimation((time) => {
+    currentIndex += time * lettersPerSecond;
 
-      // every time we reach the bottom, we kind of reset the column
-      // generating a new height, index, set of colors and opacities
-      // we have to use >= here because currentIndex is not an integer
-      if (currentIndex >= column.length) {
-        height = randomNumber(4, maxWordLength);
-        colors = generateColors(height);
-        opacities = generateOpacities(height);
-        currentIndex = -height - randomNumber(0, delayVariation);
-      }
-      updateColumn();
-      previousTime = newTime;
+    // every time we reach the bottom, we kind of reset the column
+    // generating a new height, index, set of colors and opacities
+    if (currentIndex > column.length) {
+      height = randomNumber(4, maxWordLength);
+      colors = generateColors(height);
+      opacities = generateOpacities(height);
+      currentIndex = -height - randomNumber(0, delayVariation);
     }
-    requestAnimationFrame(manageAnimation);
-  };
-  requestAnimationFrame(manageAnimation);
+
+    updateColumn();
+  });
+}
+
+function hideAllLetters(letters) {
+  letters.forEach((l) => (l.style.opacity = 0));
 }
 
 // this will update each letter inside the active range
