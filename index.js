@@ -6,7 +6,7 @@ const letters = Array.from(lettersString);
 // this is to delay the columns so that they will not go down all at once
 const delayVariation = 40;
 const maxWordLength = 30;
-const lettersPerSecond = 20;
+const lettersPerSecond = 25;
 
 // helper function
 function elt(type, attrs, ...children) {
@@ -112,35 +112,36 @@ async function animateColumn(column) {
     );
   }
 
-  setInterval(() => {
-    currentIndex++;
+  let previousTime = null;
+  const manageAnimation = (time) => {
+    const newTime = Math.floor(time / 1000 * lettersPerSecond);
+    if (previousTime !== newTime) {
+      currentIndex++;
 
-    // every time we reach the bottom, we kind of reset the column
-    // generating a new height, index, set of colors and opacities
-    // we have to use >= here because currentIndex is not an integer
-    if (currentIndex >= column.length) {
-      height = randomNumber(4, maxWordLength);
-      colors = generateColors(height);
-      opacities = generateOpacities(height);
-      currentIndex = -height - randomNumber(0, delayVariation);
+      // every time we reach the bottom, we kind of reset the column
+      // generating a new height, index, set of colors and opacities
+      // we have to use >= here because currentIndex is not an integer
+      if (currentIndex >= column.length) {
+        height = randomNumber(4, maxWordLength);
+        colors = generateColors(height);
+        opacities = generateOpacities(height);
+        currentIndex = -height - randomNumber(0, delayVariation);
+      }
+      updateColumn();
+      previousTime = newTime;
     }
-    updateColumn();
-  }, 1000 / lettersPerSecond);
+    requestAnimationFrame(manageAnimation);
+  };
+  requestAnimationFrame(manageAnimation);
 }
 
 // this will update each letter inside the active range
 function styleLetters(letters, colors, opacities, index) {
   letters.forEach((l, i) => {
-    let actualIndex;
+    if (index < 0) i = Math.floor(i + Math.abs(index));
 
-    if (index < 0) {
-      actualIndex = Math.floor(i + Math.abs(index));
-    } else {
-      actualIndex = i;
-    }
-
-    l.style.opacity = opacities[actualIndex];
-    l.style.color = colors[actualIndex];
+    l.style.opacity = opacities[i];
+    l.style.color = colors[i];
   });
 }
 
