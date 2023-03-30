@@ -1,11 +1,10 @@
-/* MATRIX CODE RAIN */
-
+/* MATRIX RAIN CODE */
 const lettersString = "ツテぱびぷのねぬとなゟゑをゐわれるむぬマヤカ阿加多";
 const letters = Array.from(lettersString);
 
 // this is to delay the columns so that they will not go down all at once
 const delayVariation = 50;
-const maxWordLength = 50;
+const maxHeight = 50;
 const lettersPerSecond = 25;
 
 // helper function
@@ -109,7 +108,7 @@ function runAnimation(frameFunc) {
 async function animateColumn(column) {
   // instead of creating the colors and opacities inside styleLetters, they are generated here so that they don't need to
   // be recreated every time we update the column
-  let height = randomNumber(0, maxWordLength);
+  let height = randomNumber(0, maxHeight);
   let colors = generateColors(height);
   let opacities = generateOpacities(height);
 
@@ -134,7 +133,7 @@ async function animateColumn(column) {
     // every time we reach the bottom, we kind of reset the column
     // generating a new height, index, set of colors and opacities
     if (currentIndex > column.length) {
-      height = randomNumber(4, maxWordLength);
+      height = randomNumber(4, maxHeight);
       colors = generateColors(height);
       opacities = generateOpacities(height);
       currentIndex = -height - randomNumber(0, delayVariation);
