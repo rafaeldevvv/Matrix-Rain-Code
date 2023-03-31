@@ -25,7 +25,7 @@ To start this project, I went on YouTube to see how the behavior of the Rain Cod
 
 So I had to take another approach to this project. After some time thinking and seeing over and over the Matrix Rain Code video, I realized that I could do this without recreating the DOM nodes every time they reached the bottom and without CSS animations. I could actually use the same DOM nodes and just style them to make it looks like a rain code. I also realized that the Rain was kind of static - the letters didn't change position, they just sort of lit up according to the current position of some column.
 
-I must say that this approach isn't very good because it still lags if the screen is too big or if the device isn't that fast.
+I must say that this approach isn't very good because it is still very slow if the screen is too big or if the device isn't that fast.
 
 ### Global variables
 
@@ -127,7 +127,7 @@ function generateOpacities(height) {
 
 ### Rendering
 
-This function will render characters and columns until the whole screen is filled with them. This part is totally dependent on the CSS. The min-content and max-content values was extremely useful here both in the columns and in the wrapper. And also you might be thinking that I could create all the DOM nodes and then append them body, but this function also needs the nodes to be appended to their parents while they are being created. This is because we verify that the width of the wrapper and the height of each column are smaller than the width and height of the document, respectively.
+This function will render characters and columns until the whole screen is filled with them. This part is totally dependent on the CSS. The min-content and max-content values was extremely useful here both in the columns and in the wrapper. And also you might be thinking that I could create all the DOM nodes and then append them to the body, but this function also needs the nodes to be appended to their parents while they are being created. This is because we verify that the width of the wrapper and the height of each column are smaller than the width and height of the document, respectively.
 
 We don't need to worry about giving a random speed to each column. They can have the same speed because columns with different font sizes will have different speeds.
 
