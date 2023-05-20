@@ -9,6 +9,7 @@
   - [Helper Functions](#helper-functions)
   - [Rendering](#rendering)
   - [Animation](#animation)
+  - [Update 1](#update-1)
 - [Author](#author)
 
 ## Overview
@@ -176,7 +177,7 @@ function renderColumns() {
 
 ### Animation
 
-Each column will manage its own animation - I guess that's one of the reasons why this code does not have good performance. 
+Each column will manage its own animation - I guess that's one of the reasons why this code does not have good performance.
 
 The animateColumn function keeps a currentIndex variable which describes the index of the first character of the active part of a column. The program will update the next characters after the first one depending on the height. When the currentIndex is larger than the height of the column - meaning we reached the bottom, the program generates a new height, new colors and opacities for more randomness.
 
@@ -230,7 +231,97 @@ function styleLetters(letters, colors, opacities, index) {
 }
 ```
 
+### Update 1
+
+I updated the code so that I don't call the requestAnimationFrame API for every column. I just call it one time and it updates all the columns. I think this improved the performance quite a bit.
+
+```js
+function animateColumns(columns) {
+  runAnimation((timeStep) => {
+    columns.forEach((c) => c.update(timeStep));
+  });
+}
+```
+
+Now each column is a class that manages its own state. It just exposes the update method and the letters array. I also used private fields for properties that are not meant to be accessed. I know the class is not totally independent because it still depends on some utilities, but I think it is okay for this simple application. I reused some logic of the previous version of this app.
+
+```js
+class Column {
+  #currentIndex;
+  #activePartHeight;
+  #colors;
+  #opacities;
+
+  constructor(letters) {
+    this.letters = letters;
+
+    this.#activePartHeight = randomNumber(4, maxHeight);
+    this.#colors = generateColors(this.#activePartHeight);
+    this.#opacities = generateOpacities(this.#activePartHeight);
+
+    this.#currentIndex =
+      -this.#activePartHeight - randomNumber(0, delayVariation);
+  }
+
+  #drawLetters() {
+    hideAllLetters(this.letters);
+
+    styleLetters(
+      this.letters.filter(
+        (_, i) =>
+          i > this.#currentIndex &&
+          i < this.#currentIndex + this.#activePartHeight
+      ),
+      this.#colors,
+      this.#opacities,
+      this.#currentIndex
+    );
+  }
+
+  update(timeStep) {
+    this.#currentIndex += timeStep * lettersPerSecond;
+
+    // every time we reach the bottom, we kind of reset the column
+    // generating a new height, index, set of colors and opacities
+    if (this.#currentIndex > this.letters.length) {
+      this.#activePartHeight = randomNumber(4, maxHeight);
+      this.#colors = generateColors(this.#activePartHeight);
+      this.#opacities = generateOpacities(this.#activePartHeight);
+      this.#currentIndex =
+        -this.#activePartHeight - randomNumber(0, delayVariation);
+    }
+
+    this.#drawLetters();
+  }
+}
+```
+
+I also added some interactivity to this application. Now the user can control the speed of the Rain Code!
+
+```js
+let lettersPerSecond = 45;
+
+document.body.appendChild(
+  elt(
+    "div",
+    { className: "range-input-box" },
+    elt("span", null, "Speed:"),
+    elt("input", {
+      type: "range",
+      min: "5",
+      max: "150",
+      step: "5",
+      value: lettersPerSecond,
+      oninput: (e) => {
+        lettersPerSecond = Number(e.target.value);
+      },
+    })
+  )
+);
+```
+
 ## Author
+
 - [Instagram](https://www.instagram.com/rafaeldevvv)
 - [Twitter](https://www.twitter.com/rafaeldevvv)
 - [Front End Mentor](https://www.frontendmentor.io/profile/rafaeldevvv)

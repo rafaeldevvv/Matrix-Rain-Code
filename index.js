@@ -190,7 +190,7 @@ function runAnimation(frameFunc) {
   requestAnimationFrame(frame);
 }
 
-async function animateColumns(columns) {
+function animateColumns(columns) {
   runAnimation((timeStep) => {
     columns.forEach((c) => c.update(timeStep));
   });
