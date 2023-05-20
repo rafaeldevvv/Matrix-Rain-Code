@@ -1,59 +1,27 @@
 /* MATRIX RAIN CODE */
-const lettersString = "ツテぱびぷのねぬとなゟゑをゐわれるむぬマヤカ阿加多";
-const letters = Array.from(lettersString);
 
-// this is to delay the columns so that they will not go down all at once
-const delayVariation = 50;
-const maxHeight = 50;
-const lettersPerSecond = 25;
-
-// helper function
+// helpers
 function elt(type, attrs, ...children) {
   const dom = document.createElement(type);
   if (attrs) Object.assign(dom, attrs);
 
   for (let child of children) {
-    if (typeof child == "string")
+    if (typeof child == "string") {
       dom.appendChild(document.createTextNode(child));
-    else dom.appendChild(child);
+    } else {
+      dom.appendChild(child);
+    }
   }
 
   return dom;
 }
 
-function randomNumber(min = 0, max) {
+function randomNumber(min, max) {
   return min + Math.random() * (max - min);
 }
 
 function randomItem(array) {
   return array[Math.floor(randomNumber(0, array.length))];
-}
-
-// this will render all columns of letters and return an array containing arrays of letters(each array for each column)
-function renderColumns() {
-  const columns = [];
-
-  const wrapper = elt("div", { className: "wrapper" });
-  document.body.appendChild(wrapper);
-
-  for (; wrapper.clientWidth < innerWidth; ) {
-    const column = elt("div", { className: "column" });
-    column.style.fontSize = randomNumber(13, 23) + "px";
-    wrapper.appendChild(column);
-
-    const lettersDOM = [];
-    for (; column.clientHeight < innerHeight; ) {
-      const letter = elt("span", { className: "letter" }, randomItem(letters));
-      letter.style.opacity = "0";
-      
-      lettersDOM.push(letter);
-      column.appendChild(letter);
-    }
-
-    columns.push(lettersDOM);
-  }
-
-  return columns;
 }
 
 function generateColors(height) {
@@ -88,7 +56,124 @@ function generateOpacities(height) {
     opacity += opacityIncrement;
   }
 
-  return opacities; 
+  return opacities;
+}
+
+function hideAllLetters(letters) {
+  letters.forEach((l) => (l.style.opacity = 0));
+}
+
+// this will update each letter inside the active range
+function styleLetters(letters, colors, opacities, currentIndex) {
+  letters.forEach((l, i) => {
+    // it is necessary because if the currentIndex is negative
+    //
+    if (currentIndex < 0) i = Math.floor(i + Math.abs(currentIndex));
+
+    l.style.opacity = opacities[i];
+    l.style.color = colors[i];
+  });
+}
+
+const letters = [..."ツテぱびぷのねぬとなゟゑをゐわれるむぬマヤカ阿加多"];
+
+// this is to delay the columns so that they will not go down all at once
+const delayVariation = 50;
+const maxHeight = 50;
+let lettersPerSecond = 45;
+
+document.body.appendChild(
+  elt(
+    "div",
+    { className: "range-input-box" },
+    elt("span", null, "Speed:"),
+    elt("input", {
+      type: "range",
+      min: "5",
+      max: "150",
+      step: "5",
+      value: lettersPerSecond,
+      oninput: (e) => {
+        lettersPerSecond = Number(e.target.value);
+      },
+    })
+  )
+);
+
+class Column {
+  #currentIndex;
+  #activePartHeight;
+  #colors;
+  #opacities;
+
+  constructor(letters) {
+    this.letters = letters;
+
+    this.#activePartHeight = randomNumber(4, maxHeight);
+    this.#colors = generateColors(this.#activePartHeight);
+    this.#opacities = generateOpacities(this.#activePartHeight);
+
+    this.#currentIndex =
+      -this.#activePartHeight - randomNumber(0, delayVariation);
+  }
+
+  #drawLetters() {
+    hideAllLetters(this.letters);
+
+    styleLetters(
+      this.letters.filter(
+        (_, i) =>
+          i > this.#currentIndex &&
+          i < this.#currentIndex + this.#activePartHeight
+      ),
+      this.#colors,
+      this.#opacities,
+      this.#currentIndex
+    );
+  }
+
+  update(timeStep) {
+    this.#currentIndex += timeStep * lettersPerSecond;
+
+    // every time we reach the bottom, we kind of reset the column
+    // generating a new height, index, set of colors and opacities
+    if (this.#currentIndex > this.letters.length) {
+      this.#activePartHeight = randomNumber(4, maxHeight);
+      this.#colors = generateColors(this.#activePartHeight);
+      this.#opacities = generateOpacities(this.#activePartHeight);
+      this.#currentIndex =
+        -this.#activePartHeight - randomNumber(0, delayVariation);
+    }
+
+    this.#drawLetters();
+  }
+}
+
+// this will render all columns of letters and return an array containing arrays of letters(each array for each column)
+function renderColumns() {
+  const columns = [];
+
+  const wrapper = elt("div", { className: "wrapper" });
+  document.body.appendChild(wrapper);
+
+  for (; wrapper.clientWidth < innerWidth; ) {
+    const column = elt("div", { className: "column" });
+    column.style.fontSize = randomNumber(13, 23) + "px";
+    wrapper.appendChild(column);
+
+    const lettersDOM = [];
+    for (; column.clientHeight < innerHeight; ) {
+      const letter = elt("span", { className: "letter" }, randomItem(letters));
+      letter.style.opacity = "0";
+
+      lettersDOM.push(letter);
+      column.appendChild(letter);
+    }
+
+    columns.push(new Column(lettersDOM));
+  }
+
+  return columns;
 }
 
 // convenient wrapper function to run animations
@@ -105,62 +190,15 @@ function runAnimation(frameFunc) {
   requestAnimationFrame(frame);
 }
 
-async function animateColumn(column) {
-  // instead of creating the colors and opacities inside styleLetters, they are generated here so that they don't need to
-  // be recreated every time we update the column
-  let height = randomNumber(0, maxHeight);
-  let colors = generateColors(height);
-  let opacities = generateOpacities(height);
-
-  // this is an approximate index of the first letter from top to bottom
-  let currentIndex = -height - randomNumber(0, delayVariation);
-
-  function updateColumn() {
-    // we need to clean all letters before styling the active ones because
-    // requestAnimationFrame might skip some letters depending on the time step
-    hideAllLetters(column);
-    styleLetters(
-      column.filter((_, i) => i > currentIndex && i < currentIndex + height),
-      colors,
-      opacities,
-      currentIndex
-    );
-  }
-
-  runAnimation((time) => {
-    currentIndex += time * lettersPerSecond;
-
-    // every time we reach the bottom, we kind of reset the column
-    // generating a new height, index, set of colors and opacities
-    if (currentIndex > column.length) {
-      height = randomNumber(4, maxHeight);
-      colors = generateColors(height);
-      opacities = generateOpacities(height);
-      currentIndex = -height - randomNumber(0, delayVariation);
-    }
-
-    updateColumn();
-  });
-}
-
-function hideAllLetters(letters) {
-  letters.forEach((l) => (l.style.opacity = 0));
-}
-
-// this will update each letter inside the active range
-function styleLetters(letters, colors, opacities, index) {
-  letters.forEach((l, i) => {
-    if (index < 0) i = Math.floor(i + Math.abs(index));
-
-    l.style.opacity = opacities[i];
-    l.style.color = colors[i];
+async function animateColumns(columns) {
+  runAnimation((timeStep) => {
+    columns.forEach((c) => c.update(timeStep));
   });
 }
 
 function run() {
   const columns = renderColumns();
-
-  for (let c of columns) animateColumn(c);
+  animateColumns(columns);
 }
 
 run();
